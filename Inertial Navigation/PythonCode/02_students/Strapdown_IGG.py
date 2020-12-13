@@ -1,6 +1,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
-
+from math import cos
+from math import sin
+from math import sqrt
 import scipy.io
 from scipy import interpolate
 
@@ -92,7 +94,7 @@ f = 1 / 298.257222101 #GRS80
 
 imar_data = IMARdata()
 #imar_data.readIMAR('../data/IMAR0007_cut01_matlab_sparse.mat', correctedIMUdata = False, UTMZone=32, fromMatlab=True)
-imar_data.readIMAR('../data/IMAR.mat', correctedIMUdata = False )
+imar_data.readIMAR('measurements/IMAR_2018.mat', correctedIMUdata = False )
 
 # --------------------------------------------------------------
 # IMU DATA
@@ -163,20 +165,24 @@ else:
 # NED w.r.t. ECEF [rad] [rad] [rad]
 
 eul_n_b_old = rpy_ned[0,:] # start Euler angles from IMAR solution
+phi = eul_n_b_old[0]
+theta = eul_n_b_old[1]
+gamma = eul_n_b_old[2]
 
 # ---------------------------------------
 # TODO (1) INITIAL VALUES
 
 # - set up rotation matrix here!
 
-C_b_n_old = 
+C_b_n_old = np.array([[cos(theta)*cos(gamma),-cos(phi)*sin(gamma) + sin(phi)*sin(theta)*cos(gamma), sin(phi)*sin(gamma)  + cos(phi)*sin(theta)*cos(gamma)],
+                      [cos(theta)*sin(gamma), cos(phi)*cos(gamma) + sin(phi)*sin(theta)*sin(gamma), -sin(phi)*cos(gamma) + cos(phi)*sin(theta)*sin(gamma)],
+                      [-sin(theta), sin(phi)*cos(theta), cos(phi) * cos(theta)]])
+# # 1.3. Initial velocity (North, East, Down [m s^-1])
+v_eb_n_old = np.array([0,0,0])
 
-# 1.3. Initial velocity (North, East, Down [m s^-1])
-v_eb_n_old = 
+# # ---------------------------------------
 
-# ---------------------------------------
-
-# 1.4 Storing initial navigation solution
+# # 1.4 Storing initial navigation solution
 nav_solution[0,0] = time_old
 nav_solution[0,1] = geod.rad2deg(Lat_b_old)
 nav_solution[0,2] = geod.rad2deg(Long_b_old)
@@ -184,16 +190,16 @@ nav_solution[0,3] = h_b_old
 nav_solution[0,4:7] = v_eb_n_old
 nav_solution[0,7:10] = geod.rad2deg(eul_n_b_old)
 
-# Calculate empirical gravity in B-Frame
-# TODO Compute empirical Gravity from IMU measurements (eq. 16)
-g_emp = 
+# # Calculate empirical gravity in B-Frame
+# # TODO Compute empirical Gravity from IMU measurements (eq. 16)
+g_emp = sqrt(allmsm_w_ib_b[0]**2 + allmsm_w_ib_b[1]**2 + allmsm_w_ib_b**2)
 
-# percent update variable
+# # percent update variable
 percent = 0.05
 
-# ----------------------------------------------------------------------------
+# # ----------------------------------------------------------------------------
 
-# 1.5. Start of the main loop
+# # 1.5. Start of the main loop
 for epoch in range(1, no_epochs):  # for testing: 50000 # all no_epochs
     
     # percent update
