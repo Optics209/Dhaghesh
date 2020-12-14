@@ -1,10 +1,12 @@
 import numpy as np
 import matplotlib.pyplot as plt
+
 from math import cos
 from math import sin
 from math import sqrt
 from math import pow
 from math import tan
+
 import scipy.io
 from scipy import interpolate
 
@@ -48,7 +50,7 @@ import functions.geodetic_tools as geod
 # Simplification:
 # (simplification means that Earths rotation rate, transportation rate, and
 # gravity influence in North direction are disregarded)
-simplified = 1 # 0 - no, 1 - yes  
+simplified = 0 # 0 - no, 1 - yes  
 
 # Empirical gravity model:
 # Instead of mathematical gravity model uses accelerometer readings at
@@ -65,6 +67,25 @@ save_solution = 0 # 1 - yes, 0 - no
 # ##########################################################################
 #  CONSTANTS ,HELP VARIABLES, FUNCTIONS
 # ##########################################################################
+#folder = fileparts(which(mfilename)); 
+#Add that folder plus all subfolders to the path.
+#addpath(genpath(folder));
+# -------------------------------------------------------------------------
+#                     STRAPDOWN NAVIGATION 
+
+# for: Master of Science in Geodetic Engineering
+#      I. semester - Sensors & State Estimation
+#      Geodetic track - Exercise 1: Strapdown navigation
+
+# -------------------------------------------------------------------------
+# Description: 
+# * Stand-alone solution
+# * Made for processing IMAR data file from IGG kinematic MSS system
+# * Navigation equations in local navigation frame (NED)
+# * Algorithm reference: Groves 2013. "Principles of GNSS, Inertial, and 
+#   Multisensor Integrated Navigation Systems," Second Edition, Chapter 5.
+# * All symbols/variables are defined corresponding to the ref. literature
+# * Summary of all relevant functions can be found in:
 
 # Earth's ellipsoid radius at equator - a [m]
 a = 6378137; #GRS80 & WGS84
@@ -96,7 +117,7 @@ f = 1 / 298.257222101 #GRS80
 
 imar_data = IMARdata()
 #imar_data.readIMAR('../data/IMAR0007_cut01_matlab_sparse.mat', correctedIMUdata = False, UTMZone=32, fromMatlab=True)
-imar_data.readIMAR('Inertial Navigation/measurements/IMAR_2018.mat', correctedIMUdata = False )
+imar_data.readIMAR('02_students/measurements/IMAR_2018.mat', correctedIMUdata = False )
 
 # --------------------------------------------------------------
 # IMU DATA
@@ -264,6 +285,7 @@ for epoch in range(1, no_epochs):  # for testing: 50000 # all no_epochs
         # Curvature radius R_e in the East direction
         # TODO 
         # - Re (eq. 8)
+
         R_e = a / sqrt(1- ((e ** 2)* (sin(Lat_b_old)**2)))
      
         # Curvature radius R_n in the North direction
@@ -402,7 +424,8 @@ print('100 % ')
 save_solution = True
 
 if (save_solution == True):
-    np.savetxt('nav_solution_python.txt', nav_solution, delimiter=',')
+
+    np.savetxt('nav_solution_python_advanced.txt', nav_solution, delimiter = ',')
     print('saved nav solution file')
     # nav_solution = np.loadtxt( 'nav_solution_python.txt', dtype=np.float, delimiter=',' )
 

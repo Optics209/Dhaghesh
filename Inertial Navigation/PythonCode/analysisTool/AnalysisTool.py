@@ -12,19 +12,19 @@ from functions.readStrapdownData import *
 
 
 # (1) Load reference data (Grooves fancy strapdown)
-str_adv = 'data/advanced_Strapdown.txt'
+str_adv = 'analysisTool/data/Groves_accurate_solution.txt'
 SD_advanced = StrapdownData()
 SD_advanced.read( str_adv, "advanced")
 
 # (2) Load Own Solution
 
-str_simple = '../data/simple_strapdown.txt'
+str_simple = 'analysisTool/data/nav_solution_python.txt'
 SD_simple = StrapdownData()
 SD_simple.read( str_simple , "simple")
 
 # (3) load reference data
 imar = IMARdata()
-imar.readIMAR('../data/IMAR_2018.mat', correctedIMUdata = False )
+imar.readIMAR('analysisTool/data/IMAR_2018.mat', correctedIMUdata = False )
 
 
 # INTERPOLATE DATA
@@ -112,6 +112,7 @@ yaw_adv = f_n_yaw(time_vector)
 
 
 # PLOT
+
 plotvar = True
 
 if (plotvar == True):
