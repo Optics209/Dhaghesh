@@ -274,7 +274,7 @@ for epoch in range(1, no_epochs):  # for testing: 50000 # all no_epochs
         # Vector of angular rates of NED w.r.t. ECEF
         # TODO 
         # - compute velocity of body frame (eq. 7)
-        w_en_n = np.array([[v_eb_n_old[1]/R_e + h_b_old],[((-1) * v_eb_n_old[0])/R_n + h_b_old],[((-1) * v_eb_n_old[1])*tan(Lat_b_old)/R_e + h_b_old]])
+        w_en_n = np.array([[v_eb_n_old[1]/R_e + h_b_old],[((-1) * v_eb_n_old[0])/R_n + h_b_old],[(((-1) * v_eb_n_old[1])*tan(Lat_b_old))/R_e + h_b_old]])
        
         # Skew symmetric matrix for Transport rate
         # TODO 
@@ -399,7 +399,7 @@ print('100 % ')
 #   [s]  |     [m,m,m]    |    [m s^-1]    |      [deg]
 
 # save and load Strapdown Estimates
-save_solution == True
+save_solution = True
 
 if (save_solution == True):
     np.savetxt('nav_solution_python.txt', nav_solution, delimiter=',')
