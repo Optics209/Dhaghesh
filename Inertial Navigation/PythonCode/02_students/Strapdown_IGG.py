@@ -48,7 +48,7 @@ import functions.geodetic_tools as geod
 # Simplification:
 # (simplification means that Earths rotation rate, transportation rate, and
 # gravity influence in North direction are disregarded)
-simplified = 0 # 0 - no, 1 - yes  
+simplified = 1 # 0 - no, 1 - yes  
 
 # Empirical gravity model:
 # Instead of mathematical gravity model uses accelerometer readings at
@@ -241,9 +241,9 @@ for epoch in range(1, no_epochs):  # for testing: 50000 # all no_epochs
     # TODO (2) ATTITUDE, equation 3
     # - set up matrix that represents earth rotattion rate
 
-    OM_ie_n = w_ie * np.array([[0, sin(LLA0[0]),0],
-                               [-sin(LLA0[0]),0,cos(LLA0[0])],
-                               [0,cos(LLA0[0]),0]])
+    OM_ie_n = w_ie * np.array([[0, sin(Lat_b_old),0],
+                               [-sin(Lat_b_old),0,cos(Lat_b_old)],
+                               [0,cos(Lat_b_old),0]])
 
     # Simple CTM update (simplifications)
     # ...................................
@@ -254,8 +254,8 @@ for epoch in range(1, no_epochs):  # for testing: 50000 # all no_epochs
         # TODO (2) ATTITUDE
         # - perform Attitude Update with simplified equation
 
-        C_b_n_new = C_b_n_old * (np.identity(3) + OM_ib_b*(tau_i))
-       
+        C_b_n_new = np.dot(C_b_n_old,(np.identity(3) + OM_ib_b*(tau_i)))
+
     # Regular CTM update (no simplifications)
     # .......................................
     else:
@@ -274,26 +274,27 @@ for epoch in range(1, no_epochs):  # for testing: 50000 # all no_epochs
         # Vector of angular rates of NED w.r.t. ECEF
         # TODO 
         # - compute velocity of body frame (eq. 7)
-        w_en_n = np.array([[v_eb_n_old/R_e + h_b_old],[((-1) * v_eb_n_old)/R_n + h_b_old],[((-1) * v_eb_n_old)*tan(Lat_b_old)/R_e + h_b_old]])
-
+        w_en_n = np.array([[v_eb_n_old[1]/R_e + h_b_old],[((-1) * v_eb_n_old[0])/R_n + h_b_old],[((-1) * v_eb_n_old[1])*tan(Lat_b_old)/R_e + h_b_old]])
+       
         # Skew symmetric matrix for Transport rate
         # TODO 
         # - set up skew symmetric Matrix of Transport rate
         # OM_en_n = geod.vec2skewmat(geod.vector3(w_en_n[0],w_en_n[1],w_en_n[2]))
-        OM_en_n = np.array([[0.0, -w_en_n[2], w_en_n[1]],[w_en_n[2],0.0,-w_en_n[0]],[-w_en_n[1],w_en_n[0],0.0]])
+        OM_en_n = np.array([[0.0, -w_en_n[0][0], w_en_n[1][0]],[w_en_n[2][0],0.0,-w_en_n[0][0]],[-w_en_n[1][0],w_en_n[0][0],0.0]])
+
         # CTM update
         # ..................................................................
         # TODO (2) ATTITUDE
         # - perform Attitude Update, not simplified
-        C_b_n_new = C_b_n_old * (np.identity(3) + OM_ib_b*(tau_i)) - ((OM_ie_n + OM_en_n)*C_b_n_old* tau_i)
-
+        C_b_n_new = np.dot(C_b_n_old,(np.identity(3) + OM_ib_b*(tau_i))) - np.dot((OM_ie_n + OM_en_n),C_b_n_old)* tau_i
+       
     # 3. Specific force frame transofrmation
     # ---------------------------------------------------------------------
 
     # TODO (3) SPECIFIC FORCE TRANSFORMATION
     # - transform specific force to Navigation Frame (eq. 10)
-    f_ib_n = 1/2 * (C_b_n_old + C_b_n_new) * f_ib_b
-
+    f_ib_n = 1/2 * np.dot((C_b_n_old + C_b_n_new),f_ib_b)
+   
     ## 4. Velocity update
     # --------------------------------------------------------------------- 
     
@@ -323,8 +324,8 @@ for epoch in range(1, no_epochs):  # for testing: 50000 # all no_epochs
         
         # TODO (4) VELOCITY UPDATE
         # - implement simplified version of velocity update (eq. 11)
-        v_eb_n_new = v_eb_n_old + (f_ib_n + g_b_n - (OM_en_n + 2 * OM_ie_n * v_eb_n_old )* tau_i)
-
+        v_eb_n_new = v_eb_n_old + (f_ib_n + g_b_n - np.dot((2 *OM_ie_n),v_eb_n_old))*tau_i
+     
     else:
         # TODO (4) VELOCITY UPDATE
         # - compute North Component of Gravity Vector (eq. 14)
@@ -332,16 +333,17 @@ for epoch in range(1, no_epochs):  # for testing: 50000 # all no_epochs
 
         # TODO (4) VELOCITY UPDATE
         # - perform not simplified velocity update (eq. 11)
-        v_eb_n_new = v_eb_n_old + (f_ib_n + g_b_n - (OM_en_n + 2 * OM_ie_n * v_eb_n_old )* tau_i)
-    
+        v_eb_n_new = v_eb_n_old + (f_ib_n + g_b_n - np.dot((OM_en_n + 2 * OM_ie_n),v_eb_n_old))*tau_i
+        
     # (5) Position Update
     # ---------------------------------------------------------------------
     
     # Updating ellipsoid height
     # TODO (5) Position UPDATE
     # - perform height update (eq. 17)
-    h_b_new = h_b_old - (tau_i/2) * (v_eb_n_old[2] + v_eb_n_new[2])
-    
+    h_b_new = h_b_old - ((tau_i/2) * (v_eb_n_old[2] + v_eb_n_new[2]))
+   
+  
     if( simplified == 1):
        # TODO (5) Position UPDATE
        # - implement simplified version
@@ -355,18 +357,18 @@ for epoch in range(1, no_epochs):  # for testing: 50000 # all no_epochs
     # Updating lattitude
     # TODO (5) Position UPDATE
     # - compute latitude update (eq. 18)
-    Lat_b_new = Lat_b_old + (tau_i/2) * ((v_eb_n_old[0]/R_n + h_b_old) + (v_eb_n_new[0]/R_n + h_b_new))
+    Lat_b_new = Lat_b_old + ((tau_i/2) * ((v_eb_n_old[0]/R_n + h_b_old) + (v_eb_n_new[0]/R_n + h_b_new)))
     
     # Calculating new curvature radius in the East direction (R_e_new)
     # TODO (5) Position UPDATE
     # - compute new curvature in east direction --> needed for longitude update!
-    R_e_new = (a * (1-e**2)) /  (sqrt((1-((e ** 2)* (sin(Lat_b_new)**2))))**3)
+    R_e_new =  a / sqrt(1- ((e ** 2)* (sin(Lat_b_new)**2)))
     
     # Updating longitude
     # TODO (5) Position UPDATE
     # - compute longitude update (eq. 19)
-    Long_b_new = Long_b_old + (tau_i/2) * ((v_eb_n_old[1]/((R_e + h_b_old)*cos(Lat_b_old)))+ (v_eb_n_new/((R_e_new + h_b_new)*cos(Lat_b_new))))
-
+    Long_b_new = Long_b_old + ((tau_i/2) * ((v_eb_n_old[1]/((R_e + h_b_old)*cos(Lat_b_old)))+ (v_eb_n_new[1]/((R_e_new + h_b_new)*cos(Lat_b_new)))))
+   
     # 5. Storing values in navigation solution matrix
     # ---------------------------------------------------------------------    
     nav_solution[epoch,0] = time_new
