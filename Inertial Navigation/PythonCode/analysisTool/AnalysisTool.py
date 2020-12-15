@@ -22,7 +22,13 @@ str_simple = 'analysisTool/data/nav_solution_python.txt'
 SD_simple = StrapdownData()
 SD_simple.read( str_simple , "simple")
 
-# (3) load reference data
+# (3) Impirical Gravity One
+
+str_emprical = 'analysisTool/data/nav_solution_python_emp_gravity_one.txt'
+SD_emprical = StrapdownData()
+SD_emprical.read( str_emprical , "empirical gravity")
+
+# (4) load reference data
 imar = IMARdata()
 imar.readIMAR('analysisTool/data/IMAR_2018.mat', correctedIMUdata = False )
 
@@ -70,6 +76,9 @@ H_sim = f_n_imu(time_vector)
 
 f_n_imu = interpolate.interp1d( SD_advanced.gpstime, SD_advanced.UTM[:,2] ,kind='linear')
 H_adv = f_n_imu(time_vector)
+
+f_n_imu = interpolate.interp1d( SD_emprical.gpstime, SD_emprical.UTM[:,2] ,kind='linear')
+H_emp = f_n_imu(time_vector)
 
 # (2) roll pitch yaw
 
@@ -194,6 +203,18 @@ if (plotvar == True):
     plt.legend(['roll angle','pitch angle', "yaw angle"])
     plt.show()
 
+    #emprical
+
+    plt.plot(time_vector_red_rpy, H_sim - H_GPS, '.r')
+    plt.plot(time_vector_red_rpy, H_emp - H_GPS, '.b')
+
+    plt.title('Heights Differences', fontsize=14, fontweight='bold' )
+    plt.xlabel(" time [s] ", fontsize=12, fontweight='bold')
+    plt.ylabel(" meters[m] ", fontsize=12, fontweight='bold')
+    plt.grid(color='k', linestyle='-', linewidth=0.5)
+    plt.legend(['Simple_Height','Empirical_Height'])
+    plt.show()
+
     # RPY differences
     delta_roll_sim = roll_sim - geod.rad2deg(roll_imar)
     delta_pitch_sim = pitch_sim - geod.rad2deg(pitch_imar)
@@ -297,6 +318,7 @@ if (plotvar == True):
 
 
     # PLOT VELOCITY
+    
     # simple
     plt.plot(time_vector_red, vx_sim, '.r')
     plt.plot(time_vector_red, vy_sim, '.g')

@@ -311,7 +311,7 @@ for epoch in range(1, no_epochs):  # for testing: 50000 # all no_epochs
         # ..................................................................
         # TODO (2) ATTITUDE
         # - perform Attitude Update, not simplified
-        C_b_n_new = np.dot(C_b_n_old,(np.identity(3) + (OM_ib_b*tau_i))) - np.dot((OM_ie_n + OM_en_n),C_b_n_old)* tau_i
+        C_b_n_new = np.dot(C_b_n_old,(np.identity(3) + (OM_ib_b*tau_i))) - (np.dot((OM_ie_n + OM_en_n),C_b_n_old)* tau_i)
        
     # 3. Specific force frame transofrmation
     # ---------------------------------------------------------------------
@@ -338,7 +338,8 @@ for epoch in range(1, no_epochs):  # for testing: 50000 # all no_epochs
         # TODO (4) VELOCITY UPDATE
         # - compute gravity from model
         
-        g_0 = 9.7803253359 * (1 + (0.001931853 * (sin(Lat_b_old)**2))/ (sqrt(1 - (e * sin(Lat_b_old))**2)))
+        g_0 = 9.7803253359 * ((1 + (0.001931853 * (sin(Lat_b_old)**2)))/ (sqrt(1 - (e * sin(Lat_b_old))**2)))
+        # g_b_n[2] = g_0 * ( 1 - ((2/a) * ( 1 + (f * (1 - 2 * (sin(Lat_b_old)**2))) + ((((w_ie * a)**2) * b)/ mi))*h_b_old) + ((3/(a **2 )* (h_b_old ** 2))))
         g_b_n[2] = g_0 * (1 - 2/a * (1 + f*(1 - 2 * (sin(Lat_b_old)**2)) + ((w_ie**2)*(a**2)*b/mi))*h_b_old + (3/(a**2)) * (h_b_old**2))
 
     else:
@@ -353,7 +354,7 @@ for epoch in range(1, no_epochs):  # for testing: 50000 # all no_epochs
         
         # TODO (4) VELOCITY UPDATE
         # - implement simplified version of velocity update (eq. 11)
-        v_eb_n_new = v_eb_n_old + (f_ib_n + g_b_n - np.dot((2 * OM_ie_n),v_eb_n_old))*tau_i
+        v_eb_n_new = v_eb_n_old + ((f_ib_n + g_b_n - np.dot((2 * OM_ie_n),v_eb_n_old))*tau_i)
      
     else:
         # TODO (4) VELOCITY UPDATE
@@ -362,7 +363,7 @@ for epoch in range(1, no_epochs):  # for testing: 50000 # all no_epochs
 
         # TODO (4) VELOCITY UPDATE
         # - perform not simplified velocity update (eq. 11)
-        v_eb_n_new = v_eb_n_old + (f_ib_n + g_b_n - np.dot((OM_en_n + 2 * OM_ie_n),v_eb_n_old))*tau_i
+        v_eb_n_new = v_eb_n_old + ((f_ib_n + g_b_n - np.dot((OM_en_n + 2 * OM_ie_n),v_eb_n_old))*tau_i)
         
     # (5) Position Update
     # ---------------------------------------------------------------------
@@ -387,7 +388,7 @@ for epoch in range(1, no_epochs):  # for testing: 50000 # all no_epochs
     # TODO (5) Position UPDATE
     # - compute latitude update (eq. 18)
     
-    Lat_b_new = Lat_b_old + ((v_eb_n_new[0] / (R_n + h_b_old) + v_eb_n_new[0]/ (R_n + h_b_new)) * tau_i * 0.5)
+    Lat_b_new = Lat_b_old + (((v_eb_n_new[0] / (R_n + h_b_old)) + (v_eb_n_new[0]/ (R_n + h_b_new))) * tau_i * 0.5)
     
     # Calculating new curvature radius in the East direction (R_e_new)
     # TODO (5) Position UPDATE
@@ -399,7 +400,7 @@ for epoch in range(1, no_epochs):  # for testing: 50000 # all no_epochs
     # TODO (5) Position UPDATE
     # - compute longitude update (eq. 19)
     
-    Long_b_new = Long_b_old + ((v_eb_n_old[1]/((R_e + h_b_old) * cos(Lat_b_old)) + v_eb_n_new[1]/((R_e_new + h_b_new) * cos(Lat_b_new))) * tau_i * 0.5)
+    Long_b_new = Long_b_old + (((v_eb_n_old[1]/((R_e + h_b_old) * cos(Lat_b_old))) + (v_eb_n_new[1]/((R_e_new + h_b_new) * cos(Lat_b_new)))) * tau_i * 0.5)
     
     
     # 5. Storing values in navigation solution matrix
