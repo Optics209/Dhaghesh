@@ -130,7 +130,8 @@ if (plotvar == True):
     plt.plot(E_sim, N_sim, '.r')
     plt.plot(E_adv, N_adv, ".g")
     plt.plot(E_GPS, N_GPS, '.k')
-
+    plt.plot(E_sim[3897], N_sim[3897], 'mo')
+    plt.plot(E_GPS[3897], N_GPS[3897], 'yo')
     plt.title('UTM Trajectory (GPS / Strapdown) interpolated', fontsize=14, fontweight='bold' )
     plt.axis('equal')
     plt.xlabel(" Easting [m] ", fontsize=12, fontweight='bold')
@@ -141,23 +142,23 @@ if (plotvar == True):
 
     # (2) PLOT Coordinate Differences
     plt.subplot(311)
-    plt.plot(time_vector_red, E_sim - E_GPS, '.r')
-    plt.plot(time_vector_red, E_adv - E_GPS, '.g')
+    plt.plot(time_vector_red, np.abs(E_sim - E_GPS), '.r')
+    plt.plot(time_vector_red, np.abs(E_adv - E_GPS), '.g')
     plt.grid(color='k', linestyle='-', linewidth=0.5)
     plt.title('UTM Coordinates - Differences to GPS observations', fontsize=14, fontweight='bold' )
     plt.legend(['simple solution - GPS', "advanced solution - GPS"], fontsize=10)
     plt.ylabel("$\Delta$ UTM east [m]", fontsize=12, fontweight='bold')
 
     plt.subplot(312)
-    plt.plot(time_vector_red, N_sim - N_GPS, '.r')
-    plt.plot(time_vector_red, N_adv - N_GPS, '.g')
+    plt.plot(time_vector_red, np.abs(N_sim - N_GPS), '.r')
+    plt.plot(time_vector_red, np.abs(N_adv - N_GPS), '.g')
     plt.grid(color='k', linestyle='-', linewidth=0.5)
     plt.legend(['simple solution - GPS', "advanced solution - GPS"], fontsize=10)
     plt.ylabel("$\Delta$ UTM north [m]", fontsize=12, fontweight='bold')
 
     plt.subplot(313)
-    plt.plot(time_vector_red, H_sim - H_GPS, '.r')
-    plt.plot(time_vector_red, H_adv - H_GPS, '.g')
+    plt.plot(time_vector_red, np.abs(H_sim - H_GPS), '.r')
+    plt.plot(time_vector_red, np.abs(H_adv - H_GPS), '.g')
     plt.grid(color='k', linestyle='-', linewidth=0.5)
     plt.legend(['simple solution - GPS', "advanced solution - GPS"], fontsize=10)
     plt.xlabel("time [s]", fontsize=12, fontweight='bold')
@@ -354,3 +355,9 @@ if (plotvar == True):
     plt.ylabel("$m_s^2$", fontsize=12, fontweight='bold')
     plt.xlabel("time [s]", fontsize=12, fontweight='bold')
     plt.show()
+
+
+difference = np.sqrt(np.power((N_sim-N_GPS),2) + np.power((E_GPS-E_sim),2))
+
+# print(np.amax(difference))
+print(np.where(difference == np.amax(difference)))
