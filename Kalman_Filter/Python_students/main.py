@@ -83,28 +83,34 @@ if (GPS_multi_simu == True):
 
 # -----------------------------------------------------
 # Statistics
-print(np.std(omega[0:1000]))
+
 # Measurement noise
 std_gps = 0.05      # GPS [m]
-std_a =  np.std(a[0:1000])       # Accelerations [m/s^2]
-std_omega =  np.std(omega[0:1000])  # Angular rate [rad/s]
+std_a =  float(np.std(a[0:1000]))       # Accelerations [m/s^2]
+std_omega =  float(np.std(omega[0:1000]))  # Angular rate [rad/s]
+
 
 # System noise
 wk_phi =  0.1   # Angular accelerations [rad/s]
 wk_a =    1.5   # Linear jerk [m/s^3]
 
 # # Covariance Matrix Measurements
-Sll = np.array([[std_gps, 0, 0, 0],
-                [0, std_gps, 0, 0],
-                [0, 0, std_a,0, 0],
-                [0, 0, 0, std_omega]])
+Sll = np.array([[std_gps,0,0,0],
+                [0,std_gps,0,0],
+                [0,0,std_a,0],
+                [0,0,0,std_omega]])
 
 # # Covariance Matrix System Noise
 S_wkwk = np.array([[wk_phi, 0],
                    [0,   wk_a]])
 
 # # Covariance Matgrix Initial States
-# S_xkxk = 
+S_xkxk = np.array([[1, 0, 0, 0, 0, 0],
+                   [0, 1, 0, 0, 0, 0],
+                   [0, 0, 1, 0, 0, 0],
+                   [0, 0, 0, 1, 0, 0],
+                   [0, 0, 0, 0, 1, 0],
+                   [0, 0, 0, 0, 0, 1]])
 # # -----------------------------------------------------
 
 
@@ -121,135 +127,142 @@ L[1:3,idx_imu] = np.vstack(( np.transpose( x[idx_gps] ), np.transpose( y[idx_gps
 
 # -----------------------------------------------------
 # Initial states
-# xk = 
+xk = np.array([x[0],
+               y[0],
+               omega[0],
+               0,
+               0,
+               0])
 
-# # -----------------------------------------------------
-# # Variables to save estimated states
+# -----------------------------------------------------
+# Variables to save estimated states
 
-# # states
-# xstate = np.zeros((len(imar_data.imutime),7))
-# xstate[0,0] = imar_data.imutime[0]
-# xstate[0,1:7] = xk
-# print(xstate)
-# # -------------------------------------------
+# states
 
-# # Designmatrix (Jacobian)
-# H = np.array([[1, 0, 0, 0, 0, 0],
-#               [0, 1, 0, 0, 0, 0],
-#               [0, 0, 0, 0, 0, 1],
-#               [0, 0, 0, 1, 0, 0]])
+xstate = np.zeros((len(imar_data.imutime),7))
+xstate[0,0] = imar_data.imutime[0]
+xstate[0,1:7] = xk
 
-# # -------------------------------------------
-# # loop info
-# percent = 0.05
-# nbr = len(imar_data.imutime) # all = len(imar_data.imutime)
-# print('filter started ... ')
+# -------------------------------------------
 
-# # -------------------------------------------
-# # MAIN KF Loop
+# Designmatrix (Jacobian)
+H = np.array([[1, 0, 0, 0, 0, 0],
+              [0, 1, 0, 0, 0, 0],
+              [0, 0, 0, 0, 0, 1],
+              [0, 0, 0, 1, 0, 0]])
 
-# for i in range(0, nbr ): 
-#     # -------------------------------------------
-#     # percent update 
-#     if (i / nbr) > percent:
-#         print('%1.0f' % (percent * 100), '% / 100%' )
-#         percent += 0.05
+# -------------------------------------------
+# loop info
+percent = 0.05
+nbr = len(imar_data.imutime) # all = len(imar_data.imutime)
+print('filter started ... ')
 
-#     # -------------------------------------------
-#     # Prediction Step
-#     x_bar, Sx_bar = prediction( xk, S_xkxk, S_wkwk, dt, i )
+# -------------------------------------------
+# MAIN KF Loop
 
-#     # -------------------------------------------
-#     # Update Step (IMU only)
+for i in range(0, nbr ): 
+    # -------------------------------------------
+    # percent update 
+    if (i / nbr) > percent:
+        print('%1.0f' % (percent * 100), '% / 100%' )
+        percent += 0.05
 
-#     if ( np.isnan( L[1,i]) == True ):
+    # -------------------------------------------
+    # Prediction Step
+    x_bar, Sx_bar = prediction( xk.reshape(6,1), S_xkxk, S_wkwk, dt, i )
 
-#         # Kalman Gain Matrix
-#         K = Sx_bar @ H[2:,:].T @ np.linalg.inv(H[2:,:] @ Sx_bar @ H[2:,:].T + Sll)
+    # -------------------------------------------
+    # Update Step (IMU only)
 
-#         # Update state vector
-#         x_dach = xk + K @ (L[-2:,i] - (H[-2:,:] @ x_bar))
+    if ( np.isnan( L[1,i]) == True ):
 
-#         # Covariance matrix states 
-#         Sx_dach = (np.identity(Sx_bar.shape[0]) - (K @ H[-2:,:])) @ Sx_bar
-
-#         # save current estimate
-#         xstate[i,0] = imar_data.imutime[i]
-#         xstate[i,1:7] = x_dach
+        # Kalman Gain Matrix
+        K = Sx_bar @ H.T @ np.linalg.inv(H @ Sx_bar @ H.T + Sll)
         
-#         # update states for next iteration
-#         xk = x_dach
-#         S_xkxk = Sx_dach
+        # Update state vector
+        x_dach = xk + K @ (np.vstack((np.array([[0],[0]]),L[-2:,i].reshape(2,1) - (H[-2:,:] @ x_bar))))
+
+        # Covariance matrix states 
+        Sx_dach = (np.identity(Sx_bar.shape[0]) - (K @ H)) @ Sx_bar
+
+        # save current estimate
+        xstate[i,0] = imar_data.imutime[i]
+        xstate[i,1:7] = x_dach.reshape(6)
+        
+        # update states for next iteration
+        xk = x_dach
+        S_xkxk = Sx_dach
     
-#     # -------------------------------------------
-#     # Update (GPS + IMU)
-#     else:
+    # -------------------------------------------
+    # Update (GPS + IMU)
+    else:
 
-#         # Kalman Gain Matrix
-#         K = Sx_bar @ H.T @ np.linalg.inv(H @ Sx_bar @ H.T + Sll)
+        # Kalman Gain Matrix
+        K = Sx_bar @ H.T @ np.linalg.inv(H @ Sx_bar @ H.T + Sll)
 
-#         # Update state vector
-#         x_dach = xk + K @ (L[i] - (H @ x_bar))
+        # Update state vector
+       
+        x_dach = xk.reshape(6,1) + (K @ (L[1:,i].reshape(4,1) - (H @ x_bar).reshape(4,1)))
+        
+        # Covariance matrix states 
+        Sx_dach = (np.identity(Sx_bar.shape[0]) - (K @ H)) @ Sx_bar
 
-#         # Covariance matrix states 
-#         Sx_dach = (np.identity(Sx_bar.shape[0]) - (K @ H)) @ Sx_bar
+        # save estimation
+        xstate[i,0] = imar_data.imutime[i]
+        xstate[i,1:7] = x_dach.reshape(6)
 
-#         # save estimation
-#         xstate[i,0] = imar_data.imutime[i]
-#         xstate[i,1:7] = x_dach
+        # update states for next iteration
+        xk = x_dach
+        S_xkxk = Sx_dach
 
-#         # update states for next iteration
-#         xk = x_dach
-#         S_xkxk = Sx_dach
+# end MAIN loop
+# -------------------------------------------
 
-# # end MAIN loop
-# # -------------------------------------------
+print( 100, '%')
+print('... done')
 
-# print( 100, '%')
-# print('... done')
+# --------------------------------------------------- #
+# ########### Plot EKF results ################ #
+# --------------------------------------------------- #
 
-# # --------------------------------------------------- #
-# # ########### Plot EKF results ################ #
-# # --------------------------------------------------- #
+# -------------------------------------------
+# reduce plot by indexing
+idx_plot = np.arange(start=0, stop=nbr, step=10, dtype=int)
 
-# # -------------------------------------------
-# # reduce plot by indexing
-# idx_plot = np.arange(start=0, stop=nbr, step=10, dtype=int)
+# -------------------------------------------
+# Trajectory plot
+plt.plot(x,y, '.b', markersize=12)
+plt.plot(xstate[idx_plot,1], xstate[idx_plot,2], '.r')
+plt.axis('equal')
+plt.title('EKF Trajectory and GPS Measurements', fontsize=14, fontweight='bold')
+plt.xlabel('UTM (East) [m]', fontsize=12, fontweight='bold')
+plt.ylabel('UTM (North) [m]', fontsize=12, fontweight='bold')
+plt.legend(['GPS Measurements', 'EKF Trajectory'])
+plt.grid(color='k', linestyle='-', linewidth=0.5)
+plt.show()
 
-# # -------------------------------------------
-# # Trajectory plot
-# plt.plot(x,y, '.b', markersize=12)
-# plt.plot(xstate[idx_plot,1], xstate[idx_plot,2], '.r')
-# plt.axis('equal')
-# plt.title('EKF Trajectory and GPS Measurements', fontsize=14, fontweight='bold')
-# plt.xlabel('UTM (East) [m]', fontsize=12, fontweight='bold')
-# plt.ylabel('UTM (North) [m]', fontsize=12, fontweight='bold')
-# plt.legend(['GPS Measurements', 'EKF Trajectory'])
-# plt.grid(color='k', linestyle='-', linewidth=0.5)
-# plt.show()
+# -------------------------------------------
+# Acceleration & Angular Velocity
 
-# # -------------------------------------------
-# # Acceleration & Angular Velocity
-
-# plt.subplot(211)
-# plt.plot( imar_data.imutime , a, '.b' )
-# plt.plot( xstate[idx_plot,0], xstate[idx_plot,6], '-r' )
-# plt.ylabel(" Acceleration [m/s^2] ", fontsize=12, fontweight='bold')
-# plt.legend(["Raw IMU Accelerations", "EKF Accelerations "])
-# plt.title("IMU Accelerations vs. Filtered Accelerations (EKF) [X-ACC]", fontsize=14, fontweight='bold' )
-# plt.grid(color='k', linestyle='-', linewidth=0.5)
+plt.subplot(211)
+plt.plot( imar_data.imutime , a, '.b' )
+plt.plot( xstate[idx_plot,0], xstate[idx_plot,6], '-r' )
+plt.ylabel(" Acceleration [m/s^2] ", fontsize=12, fontweight='bold')
+plt.legend(["Raw IMU Accelerations", "EKF Accelerations "])
+plt.title("IMU Accelerations vs. Filtered Accelerations (EKF) [X-ACC]", fontsize=14, fontweight='bold' )
+plt.grid(color='k', linestyle='-', linewidth=0.5)
     
-# plt.subplot(212)
-# plt.plot( imar_data.imutime , geod.rad2deg(omega), '.b' )
-# plt.plot( xstate[idx_plot,0], geod.rad2deg(xstate[idx_plot,4]), '-r' )
+plt.subplot(212)
+plt.plot( imar_data.imutime , geod.rad2deg(omega), '.b' )
+plt.plot( xstate[idx_plot,0], geod.rad2deg(xstate[idx_plot,4]), '-r' )
 
-# plt.ylabel(" Angular Velocity [deg/s] ", fontsize=12, fontweight='bold')
-# plt.xlabel(" seconds of day [s] ", fontsize=12, fontweight='bold')
-# plt.legend(["Raw IMU Angular Velocity", "EKF Angular Velocity "])
-# plt.title("IMU Accelerations vs. Filtered Accelerations (EKF) [YAW] ", fontsize=14, fontweight='bold' )
-# plt.grid(color='k', linestyle='-', linewidth=0.5)
-# plt.show()
+plt.ylabel(" Angular Velocity [deg/s] ", fontsize=12, fontweight='bold')
+plt.xlabel(" seconds of day [s] ", fontsize=12, fontweight='bold')
+plt.legend(["Raw IMU Angular Velocity", "EKF Angular Velocity "])
+plt.title("IMU Accelerations vs. Filtered Accelerations (EKF) [YAW] ", fontsize=14, fontweight='bold' )
+plt.grid(color='k', linestyle='-', linewidth=0.5)
+plt.show()
 
-# # -------------------------------------------
+# -------------------------------------------
 
-# plt.show()
+plt.show()
