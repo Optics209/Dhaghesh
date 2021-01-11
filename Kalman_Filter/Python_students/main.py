@@ -86,31 +86,30 @@ if (GPS_multi_simu == True):
 
 # Measurement noise
 std_gps = 0.05      # GPS [m]
-std_a =  float(np.std(a[0:1000]))       # Accelerations [m/s^2]
-std_omega =  float(np.std(omega[0:1000]))  # Angular rate [rad/s]
-
+std_a =  np.std(a[0:1000])      # Accelerations [m/s^2]
+std_omega =  np.std(omega[0:1000])  # Angular rate [rad/s]
 
 # System noise
-wk_phi =  0.1   # Angular accelerations [rad/s]
-wk_a =    1.5   # Linear jerk [m/s^3]
+wk_phi =  0.1  # Angular accelerations [rad/s]
+wk_a =    1.5  # Linear jerk [m/s^3]
 
 # # Covariance Matrix Measurements
-Sll = np.array([[std_gps,0,0,0],
-                [0,std_gps,0,0],
-                [0,0,std_a,0],
-                [0,0,0,std_omega]])
+Sll = np.array([[std_gps**2,0,0,0],
+                [0,std_gps**2,0,0],
+                [0,0,std_a**2,0],
+                [0,0,0,std_omega**2]])
 
 # # Covariance Matrix System Noise
-S_wkwk = np.array([[wk_phi, 0],
-                   [0,   wk_a]])
+S_wkwk = np.array([[wk_phi**2, 0],
+                   [0,   wk_a**2]])
 
 # # Covariance Matgrix Initial States
-S_xkxk = np.array([[1, 0, 0, 0, 0, 0],
-                   [0, 1, 0, 0, 0, 0],
-                   [0, 0, 1, 0, 0, 0],
-                   [0, 0, 0, 1, 0, 0],
-                   [0, 0, 0, 0, 1, 0],
-                   [0, 0, 0, 0, 0, 1]])
+S_xkxk = np.array([[0.2,0,0,0,0,0],
+                   [0,0.2,0,0,0,0],
+                   [0,0,0.2,0,0,0],
+                   [0,0,0,0.2,0,0],
+                   [0,0,0,0,0.2,0],
+                   [0,0,0,0,0,0.2]])
 # # -----------------------------------------------------
 
 
@@ -129,7 +128,7 @@ L[1:3,idx_imu] = np.vstack(( np.transpose( x[idx_gps] ), np.transpose( y[idx_gps
 # Initial states
 xk = np.array([x[0],
                y[0],
-               omega[0],
+               0,
                0,
                0,
                0])
@@ -169,7 +168,7 @@ for i in range(0, nbr ):
 
     # -------------------------------------------
     # Prediction Step
-    x_bar, Sx_bar = prediction( xk.reshape(6,1), S_xkxk, S_wkwk, dt, i )
+    x_bar, Sx_bar = prediction(xk.reshape(6,1), S_xkxk, S_wkwk, dt, i)
 
     # -------------------------------------------
     # Update Step (IMU only)
@@ -177,13 +176,14 @@ for i in range(0, nbr ):
     if ( np.isnan( L[1,i]) == True ):
 
         # Kalman Gain Matrix
-        K = Sx_bar @ H.T @ np.linalg.inv(H @ Sx_bar @ H.T + Sll)
+        
+        K = Sx_bar @ H[-2:,:].T @ np.linalg.inv((H[-2:,:] @ (Sx_bar @ H[-2:,:].T)) + Sll[-2:,-2:])
         
         # Update state vector
-        x_dach = xk + K @ (np.vstack((np.array([[0],[0]]),L[-2:,i].reshape(2,1) - (H[-2:,:] @ x_bar))))
+        x_dach = x_bar + K @ (L[-2:,i].reshape(2,1) - (H[-2:,:] @ x_bar))
 
         # Covariance matrix states 
-        Sx_dach = (np.identity(Sx_bar.shape[0]) - (K @ H)) @ Sx_bar
+        Sx_dach = (np.identity(Sx_bar.shape[0]) - (K @ H[-2:,:])) @ Sx_bar
 
         # save current estimate
         xstate[i,0] = imar_data.imutime[i]
@@ -198,11 +198,11 @@ for i in range(0, nbr ):
     else:
 
         # Kalman Gain Matrix
-        K = Sx_bar @ H.T @ np.linalg.inv(H @ Sx_bar @ H.T + Sll)
+        K = Sx_bar @ H.T @ np.linalg.inv((H @ (Sx_bar @ H.T)) + Sll)
 
         # Update state vector
        
-        x_dach = xk.reshape(6,1) + (K @ (L[1:,i].reshape(4,1) - (H @ x_bar).reshape(4,1)))
+        x_dach = x_bar + K @ (L[1:,i].reshape(4,1) - (H @ x_bar))
         
         # Covariance matrix states 
         Sx_dach = (np.identity(Sx_bar.shape[0]) - (K @ H)) @ Sx_bar

@@ -27,16 +27,16 @@ def prediction( xk, S_xkxk, S_wkwk, dt, i ):
     #%
     # Predicted state vector
 	
-    x_bar = np.array([[xk[0,0] + np.cos(xk[2,0]) * (xk[4,0] * dt)],
-                      [xk[1,0] + np.sin(xk[2,0]) * (xk[4,0] * dt)],
-                      [xk[2,0] + xk[2,0] * dt],
+    x_bar = np.array([[xk[0,0] + np.cos(xk[2,0]) * xk[4,0] * dt],
+                      [xk[1,0] + np.sin(xk[2,0]) * xk[4,0] * dt],
+                      [xk[2,0] + xk[3,0] * dt],
                       [xk[3,0] + dt],
                       [xk[4,0] + xk[5,0] * dt],
                       [xk[5,0] + dt]])
    
     # Transition matrix
-    Tk = np.array([[1, 0, -np.sin(xk[2,0])* (xk[4,0] * dt), 0, np.cos(xk[2,0]) * dt, 0],
-                   [0, 1,  np.cos(xk[2,0])* (xk[4,0] * dt), 0, np.sin(xk[2,0]) * dt, 0],
+    Tk = np.array([[1, 0, -np.sin(xk[2,0])* xk[4,0] * dt, 0, np.cos(xk[2,0]) * dt, 0],
+                   [0, 1,  np.cos(xk[2,0])* xk[4,0] * dt, 0, np.sin(xk[2,0]) * dt, 0],
                    [0, 0, 1, dt, 0, 0],
                    [0, 0, 0, 1,  0, 0],
                    [0, 0, 0, 0, 1, dt],
